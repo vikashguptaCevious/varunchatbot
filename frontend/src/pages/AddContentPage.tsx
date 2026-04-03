@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import BACKEND_API from '../api';
+import BACKEND_API, { parseApiError } from '../api';
 import { useAuth } from '../context/AuthContext';
 
 const AddContentPage: React.FC = () => {
@@ -34,10 +34,12 @@ const AddContentPage: React.FC = () => {
                 showMessage('success', 'Information added successfully! It is now part of my knowledge base.');
                 setText('');
             } else {
-                throw new Error('Ingestion failed');
+                const detail = await parseApiError(res);
+                throw new Error(detail);
             }
         } catch (err) {
-            showMessage('error', 'Failed to add content. Please check if the backend is running.');
+            const msg = err instanceof Error ? err.message : 'Failed to add content.';
+            showMessage('error', msg);
             console.error(err);
         } finally {
             setLoading(false);

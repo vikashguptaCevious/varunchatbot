@@ -3,8 +3,7 @@ uvicorn
 google-generativeai
 cohere
 pinecone
-pymongo[srv]
-motor
+asyncpg
 python-dotenv
 pydantic
 pydantic-settings

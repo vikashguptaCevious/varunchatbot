@@ -8,6 +8,17 @@
   --border: #e5e7eb;
   --accent: #eff6ff;
   --success: #10b981;
+  --navbar-h: 56px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -19,16 +30,18 @@ body {
 }
 
 #root {
+  width: 100%;
   max-width: 1400px;
   margin: 0 auto;
   padding: 0;
+  min-height: 100dvh;
 }
 
+/* ——— Navbar (responsive) ——— */
 .navbar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
+  align-items: stretch;
+  padding: 0.75rem 1rem;
   background: white;
   border-bottom: 1px solid var(--border);
   position: sticky;
@@ -36,9 +49,100 @@ body {
   z-index: 100;
 }
 
-.nav-links {
+@media (min-width: 769px) {
+  .navbar {
+    padding: 1rem 1.5rem;
+  }
+}
+
+.navbar-inner {
   display: flex;
-  gap: 2rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  gap: 0.5rem;
+}
+
+.navbar-title {
+  font-size: 1.15rem;
+  color: var(--primary);
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+@media (min-width: 769px) {
+  .navbar-title {
+    font-size: 1.25rem;
+  }
+}
+
+.nav-menu-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  margin: 0;
+  margin-left: auto;
+  background: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text);
+  touch-action: manipulation;
+}
+
+@media (min-width: 769px) {
+  .nav-menu-toggle {
+    display: none;
+  }
+}
+
+.nav-links {
+  display: none;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
+  width: 100%;
+  flex-basis: 100%;
+  order: 3;
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.nav-links.is-open {
+  display: flex;
+}
+
+@media (min-width: 769px) {
+  .nav-links {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 1.25rem;
+    width: auto;
+    flex: 1 1 auto;
+    flex-basis: auto;
+    order: unset;
+    padding-top: 0;
+    margin-top: 0;
+    margin-left: auto;
+    border-top: none;
+  }
+
+  .nav-links.is-open {
+    display: flex;
+  }
 }
 
 .nav-link {
@@ -46,6 +150,19 @@ body {
   color: var(--text-muted);
   font-weight: 500;
   transition: color 0.2s;
+  padding: 0.65rem 0.5rem;
+  border-radius: 6px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  touch-action: manipulation;
+}
+
+@media (min-width: 769px) {
+  .nav-link {
+    padding: 0.35rem 0.25rem;
+    min-height: auto;
+  }
 }
 
 .nav-link:hover,
@@ -53,21 +170,78 @@ body {
   color: var(--primary);
 }
 
+.nav-btn-logout {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: inherit;
+  text-align: left;
+  padding: 0.65rem 0.5rem;
+  border-radius: 6px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  touch-action: manipulation;
+}
+
+@media (min-width: 769px) {
+  .nav-btn-logout {
+    text-align: center;
+    padding: 0.35rem 0.25rem;
+    min-height: auto;
+  }
+}
+
+.nav-btn-logout:hover {
+  color: var(--primary);
+}
+
 .main-content {
-  padding: 2rem;
+  padding: 0.75rem 0.75rem 1rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (min-width: 769px) {
+  .main-content {
+    padding: 2rem;
+  }
 }
 
 .container {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1rem;
+  width: 100%;
   max-width: 1000px;
   margin: 0 auto;
 }
 
+@media (max-width: 768px) {
+  .container {
+    max-width: 100%;
+    padding: 0;
+  }
+}
+
+/* Query / chat full-height on mobile */
+.query-page {
+  width: 100%;
+  min-height: calc(100dvh - var(--navbar-h) - 1.5rem);
+  max-width: 100%;
+}
+
+@media (min-width: 769px) {
+  .query-page {
+    min-height: calc(100vh - 120px);
+  }
+}
+
 @media (max-width: 1024px) {
   .container {
-    grid-template-columns: 1fr;
     height: auto;
   }
 }
@@ -123,6 +297,14 @@ input[type="text"]:focus {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+}
+
+.btn.btn-stop {
+  background: #ef4444;
+}
+
+.btn.btn-stop:hover {
+  background: #dc2626;
 }
 
 .btn:hover {
@@ -223,6 +405,65 @@ input[type="text"]:focus {
   100% {
     transform: rotate(360deg);
   }
+}
+
+/* --- Chat layout (query page) --- */
+.chat-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  min-height: calc(100dvh - var(--navbar-h) - 1.5rem);
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (min-width: 769px) {
+  .chat-card {
+    min-height: calc(100vh - 140px);
+  }
+}
+
+.chat-card-header {
+  padding: 1rem 1rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+@media (min-width: 769px) {
+  .chat-card-header {
+    padding: 1.5rem;
+  }
+}
+
+.chat-card-header h2 {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+@media (min-width: 769px) {
+  .chat-card-header h2 {
+    font-size: 1.25rem;
+  }
+}
+
+.chat-card .chat-history {
+  flex: 1;
+  min-height: 0;
+}
+
+.query-input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.query-input-row input[type="text"] {
+  flex: 1;
+  min-width: 0;
 }
 
 /* --- Chatbot Styles --- */
@@ -437,5 +678,48 @@ input[type="text"]:focus {
 
   40% {
     transform: scale(1);
+  }
+}
+
+/* --- Mobile tweaks --- */
+@media (max-width: 768px) {
+  .chat-history {
+    padding: 1rem 0.75rem;
+    gap: 1rem;
+  }
+
+  .query-input-area {
+    padding: 1rem 0.75rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .message-wrapper {
+    max-width: 92%;
+  }
+
+  .message-bubble {
+    font-size: 0.9rem;
+    padding: 0.85rem 1rem;
+  }
+
+  .message-metrics {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .query-input-row .btn {
+    flex-shrink: 0;
+    min-width: 72px;
+    min-height: 44px;
+    padding: 0.65rem 1rem;
+  }
+
+  .query-input-row input[type="text"] {
+    font-size: 16px;
+  }
+
+  .empty-state {
+    padding: 1rem;
+    font-size: 0.95rem;
   }
 }

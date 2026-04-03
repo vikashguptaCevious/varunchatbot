@@ -13,13 +13,13 @@ load_dotenv(dotenv_path=env_path)
 
 # Support running from project root (import as package) or from inside backend/ (direct run)
 try:
-    from backend.utils.database import mongo_db
+    from backend.utils.database import postgres_db
     from backend.utils.vector_db import vector_db
     from backend.services.rag_service import rag_service
     from backend.services.faq_service import faq_service
     from backend.services.auth_service import auth_service, get_admin_user, ADMIN_USERNAME, ADMIN_PASSWORD
 except ModuleNotFoundError:
-    from utils.database import mongo_db
+    from utils.database import postgres_db
     from utils.vector_db import vector_db
     from services.rag_service import rag_service
     from services.faq_service import faq_service
@@ -52,16 +52,20 @@ class LoginRequest(BaseModel):
 
 @app.on_event("startup")
 async def startup_db_client():
+    # Required — must succeed or API cannot persist data
+    await postgres_db.connect()
     try:
-        await mongo_db.connect()
         vector_db.connect()
+    except Exception as e:
+        print(f"Startup warning (Pinecone): {e}")
+    try:
         await faq_service.initialize()
     except Exception as e:
-        print(f"Startup failed: {e}")
+        print(f"Startup warning (FAQ init): {e}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    await mongo_db.disconnect()
+    await postgres_db.disconnect()
 
 @app.get("/health")
 async def health_check():
@@ -115,8 +119,10 @@ async def query_rag(request: QueryRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    # If running `python main.py` from inside backend/, use local module path
-    try:
-        uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
-    except ModuleNotFoundError:
-        uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    # Reload subprocess must import the same module path the parent used. From backend/ use main:app;
+    # from repo root with PYTHONPATH set, backend.main:app works.
+    _backend_dir = Path(__file__).resolve().parent
+    _app = "main:app" if Path.cwd().resolve() == _backend_dir else "backend.main:app"
+    _host = os.getenv("HOST", "0.0.0.0")
+    _port = int(os.getenv("PORT", "8000"))
+    uvicorn.run(_app, host=_host, port=_port, reload=True)

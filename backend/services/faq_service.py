@@ -9,10 +9,10 @@ from typing import Optional, List, Dict
 
 try:
     from backend.services.ai_service import ai_service
-    from backend.utils.database import mongo_db
+    from backend.utils.database import postgres_db
 except ModuleNotFoundError:
     from services.ai_service import ai_service
-    from utils.database import mongo_db
+    from utils.database import postgres_db
 
 class FAQService:
     def __init__(self):
@@ -116,7 +116,7 @@ class FAQService:
     async def _sync_embeddings(self, items: List[Dict]):
         """
         Iterates through items. 
-        Checks MongoDB for existing embedding (ID + Hash match).
+        Checks PostgreSQL for existing embedding (ID + Hash match).
         If missing, generates and saves.
         Populates self.faq_embeddings.
         """
@@ -124,12 +124,17 @@ class FAQService:
         new_embeddings_count = 0
         
         for entry in items:
+            # Greetings are covered by exact_match_map only (~260 variants). Embedding each
+            # burns the Gemini free tier (1000 embeds/day) for no benefit.
+            if entry.get("type") == "greeting":
+                continue
+
             # Create a deterministic content hash
             content_str = entry["question"]
             content_hash = hashlib.sha256(content_str.encode()).hexdigest()
             
             # 1. Check DB
-            existing = await mongo_db.get_document(
+            existing = await postgres_db.get_document(
                 self.collection_name, 
                 {"faq_id": entry["id"], "content_hash": content_hash}
             )
@@ -142,13 +147,14 @@ class FAQService:
             else:
                 # MISS: Generate
                 try:
-                    # Rate limit safety (simple sleep if processing huge batch)
-                    # For 200 items, Gemini is fast enough.
+                    # Small delay to avoid burst RPM limits on free tier
+                    if new_embeddings_count > 0:
+                        await asyncio.sleep(0.25)
                     emb_vector = ai_service.get_embeddings(entry["question"])
                     new_embeddings_count += 1
                     
                     # Save to DB
-                    await mongo_db.insert_document(self.collection_name, {
+                    await postgres_db.insert_document(self.collection_name, {
                         "faq_id": entry["id"],
                         "content_hash": content_hash,
                         "embedding": emb_vector,

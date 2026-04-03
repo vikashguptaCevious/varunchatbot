@@ -16,7 +16,7 @@ class VectorDB:
 
     def connect(self):
         if self.index_name not in self.pc.list_indexes().names():
-            # Default to 768 dimensions for Gemini text-embedding-004
+            # 768 dimensions for models/gemini-embedding-001 (output_dimensionality=768)
             self.pc.create_index(
                 name=self.index_name,
                 dimension=768,

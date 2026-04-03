@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import BACKEND_API from '../api.ts';
+import BACKEND_API, { parseApiError } from '../api';
 
 interface Metric {
     time_seconds: number;
@@ -32,6 +32,7 @@ const QueryPage: React.FC = () => {
         return saved ? JSON.parse(saved) : [];
     });
     const [loading, setLoading] = useState(false);
+    const [abortController, setAbortController] = useState<AbortController | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const apiBase = BACKEND_API;
@@ -46,7 +47,7 @@ const QueryPage: React.FC = () => {
     };
 
     const handleQuery = async () => {
-        if (!query.trim()) return;
+        if (!query.trim() || loading) return;
 
         const userMsg: ChatMessage = {
             role: 'user',
@@ -57,12 +58,15 @@ const QueryPage: React.FC = () => {
         setMessages(prev => [...prev, userMsg]);
         setQuery('');
         setLoading(true);
+        const controller = new AbortController();
+        setAbortController(controller);
 
         try {
             const res = await fetch(`${apiBase}/query`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ query: userMsg.text }),
+                signal: controller.signal,
             });
 
             if (res.ok) {
@@ -76,29 +80,43 @@ const QueryPage: React.FC = () => {
                 };
                 setMessages(prev => [...prev, botMsg]);
             } else {
-                throw new Error('Query failed');
+                const detail = await parseApiError(res);
+                throw new Error(detail);
             }
-        } catch (err) {
-            console.error(err);
-            const errorMsg: ChatMessage = {
-                role: 'bot',
-                text: "Sorry, I couldn't fetch the answer right now. Please check if the backend is running.",
-                timestamp: Date.now(),
-                isError: true
-            };
-            setMessages(prev => [...prev, errorMsg]);
+        } catch (err: any) {
+            // If user clicked Stop, silently ignore AbortError
+            if (err?.name === 'AbortError') {
+                console.warn('Query aborted by user');
+            } else {
+                console.error(err);
+                const msg = err instanceof Error ? err.message : String(err);
+                const errorMsg: ChatMessage = {
+                    role: 'bot',
+                    text: msg || "Sorry, I couldn't fetch the answer right now. Please check if the backend is running.",
+                    timestamp: Date.now(),
+                    isError: true
+                };
+                setMessages(prev => [...prev, errorMsg]);
+            }
         } finally {
             setLoading(false);
+            setAbortController(null);
+        }
+    };
+
+    const handleStop = () => {
+        if (abortController) {
+            abortController.abort();
         }
     };
 
 
 
     return (
-        <div className="container" style={{ height: 'calc(100vh - 100px)' }}>
-            <div className="card" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '0' }}>
-                <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
-                    <h2 style={{ margin: 0, border: 'none', padding: 0 }}>🔍 Ask Knowledge Base</h2>
+        <div className="container query-page">
+            <div className="card chat-card">
+                <div className="chat-card-header">
+                    <h2>🔍 Ask Knowledge Base</h2>
                 </div>
 
                 <div className="chat-history">
@@ -143,7 +161,7 @@ const QueryPage: React.FC = () => {
                 </div>
 
                 <div className="query-input-area">
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div className="query-input-row">
                         <input
                             type="text"
                             placeholder="Ask a question..."
@@ -152,9 +170,15 @@ const QueryPage: React.FC = () => {
                             onKeyDown={(e) => e.key === 'Enter' && !loading && handleQuery()}
                             disabled={loading}
                         />
-                        <button className="btn" onClick={handleQuery} disabled={loading || !query.trim()}>
-                            {loading ? <span className="loading-spinner"></span> : 'Send'}
-                        </button>
+                        {loading ? (
+                            <button className="btn btn-stop" type="button" onClick={handleStop}>
+                                ■
+                            </button>
+                        ) : (
+                            <button className="btn" type="button" onClick={handleQuery} disabled={!query.trim()}>
+                                Send
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

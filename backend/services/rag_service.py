@@ -3,12 +3,12 @@ try:
     # When running from project root (package mode)
     from backend.services.ai_service import ai_service
     from backend.utils.vector_db import vector_db
-    from backend.utils.database import mongo_db
+    from backend.utils.database import postgres_db
 except ModuleNotFoundError:
     # When running from inside backend/ (module mode)
     from services.ai_service import ai_service
     from utils.vector_db import vector_db
-    from utils.database import mongo_db
+    from utils.database import postgres_db
 import uuid
 import time
 
@@ -28,14 +28,14 @@ class RAGService:
         doc_id = str(uuid.uuid4())
         metadata["doc_id"] = doc_id
         
-        # 2. Store in MongoDB
-        mongo_doc = {
+        # 2. Store in PostgreSQL
+        row = {
             "doc_id": doc_id,
             "text": text,
             "metadata": metadata,
             "chunk_count": len(chunks)
         }
-        await mongo_db.insert_document("documents", mongo_doc)
+        await postgres_db.insert_document("documents", row)
         
         # 3. Embedding & Store in Vector DB
         vectors = []
@@ -74,18 +74,23 @@ class RAGService:
             for match in retrieval_results.matches
         ]
         
-        # 3. Reranking
+        # 3. Reranking (optional; if Cohere missing or fails, use vector retrieval order)
         docs_to_rerank = [c["text"] for c in initial_chunks]
         reranked_results = ai_service.rerank(query_text, docs_to_rerank, top_n=5)
-        
+
         top_chunks = []
         context_parts = []
-        for i, res in enumerate(reranked_results):
-            chunk_data = initial_chunks[res.index]
-            top_chunks.append(chunk_data)
-            # CRITICAL IMPROVEMENT: Include Title in the context block
-            title = chunk_data['metadata'].get('title', 'Document')
-            context_parts.append(f"Source [{i+1}] (From: {title}):\n{chunk_data['text']}")
+        if reranked_results:
+            for i, res in enumerate(reranked_results):
+                chunk_data = initial_chunks[res.index]
+                top_chunks.append(chunk_data)
+                title = chunk_data["metadata"].get("title", "Document")
+                context_parts.append(f"Source [{i+1}] (From: {title}):\n{chunk_data['text']}")
+        else:
+            for i, chunk_data in enumerate(initial_chunks[:5]):
+                top_chunks.append(chunk_data)
+                title = chunk_data["metadata"].get("title", "Document")
+                context_parts.append(f"Source [{i+1}] (From: {title}):\n{chunk_data['text']}")
             
         context = "\n\n".join(context_parts)
         

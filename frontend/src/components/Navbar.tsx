@@ -1,45 +1,59 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar: React.FC = () => {
     const { isAdmin, logout } = useAuth();
+    const [menuOpen, setMenuOpen] = useState(false);
+    const location = useLocation();
+
+    useEffect(() => {
+        setMenuOpen(false);
+    }, [location.pathname]);
+
+    useEffect(() => {
+        const onResize = () => {
+            if (window.innerWidth > 768) setMenuOpen(false);
+        };
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
+
+    const linkClass = ({ isActive }: { isActive: boolean }) =>
+        isActive ? 'nav-link active' : 'nav-link';
 
     return (
         <nav className="navbar">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <h1 style={{ fontSize: '1.25rem', color: 'var(--primary)', margin: 0 }}>MiniRAG</h1>
-            </div>
-            <div className="nav-links">
-                <NavLink
-                    to="/"
-                    className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+            <div className="navbar-inner">
+                <h1 className="navbar-title">MiniRAG</h1>
+                <div className={`nav-links ${menuOpen ? 'is-open' : ''}`}>
+                    <NavLink to="/" className={linkClass} onClick={() => setMenuOpen(false)}>
+                        Query Agent
+                    </NavLink>
+                    {isAdmin && (
+                        <NavLink to="/add" className={linkClass} onClick={() => setMenuOpen(false)}>
+                            Add Content
+                        </NavLink>
+                    )}
+                    {isAdmin ? (
+                        <button type="button" className="nav-btn-logout" onClick={() => { logout(); setMenuOpen(false); }}>
+                            Logout
+                        </button>
+                    ) : (
+                        <NavLink to="/login" className={linkClass} onClick={() => setMenuOpen(false)}>
+                            Admin
+                        </NavLink>
+                    )}
+                </div>
+                <button
+                    type="button"
+                    className="nav-menu-toggle"
+                    aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+                    aria-expanded={menuOpen}
+                    onClick={() => setMenuOpen((o) => !o)}
                 >
-                    Query Agent
-                </NavLink>
-                {isAdmin && (
-                    <NavLink
-                        to="/add"
-                        className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
-                    >
-                        Add Content
-                    </NavLink>
-                )}
-                {isAdmin ? (
-                    <button
-                        onClick={logout}
-                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem' }}
-                    >
-                        Logout
-                    </button>
-                ) : (
-                    <NavLink
-                        to="/login"
-                        className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
-                    >
-                        Admin
-                    </NavLink>
-                )}
+                    {menuOpen ? '✕' : '☰'}
+                </button>
             </div>
         </nav>
     );
