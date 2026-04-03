@@ -32,8 +32,8 @@ app = FastAPI(title="Mini RAG API")
 # CORS for frontend integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, restrict this
-    allow_credentials=True,
+    allow_origins=["*"],  # Allow all origins (frontend, Swagger, etc.)
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
