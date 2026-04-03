@@ -1,5 +1,5 @@
-const BACKEND_API: string = "http://localhost:8000";
-// const BACKEND_API: string = "https://jd-llm-rag-system-1.onrender.com";
+// const BACKEND_API: string = "http://localhost:8000";
+const BACKEND_API: string = "https://varunchatbot.onrender.com";
 
 /** FastAPI often returns { detail: string | ValidationError[] } */
 export async function parseApiError(res: Response): Promise<string> {
