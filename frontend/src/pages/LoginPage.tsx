@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import BACKEND_API from '../api';
 
 const LoginPage: React.FC = () => {
-    const [username, setUsername] = useState('');
+    const [username, setUsername] = useState(''); 
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
